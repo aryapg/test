@@ -81,6 +81,18 @@ y = label_encoder.fit_transform(y)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Check for missing values or NaNs in X_train
+if X_train.isnull().values.any():
+    print("X_train has missing values or NaNs.")
+else:
+    print("X_train does not have missing values or NaNs.")
+
+# Check for missing values or NaNs in y_train
+if y_train.isnull().values.any():
+    print("y_train has missing values or NaNs.")
+else:
+    print("y_train does not have missing values or NaNs.")
+    
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
 rf_model.fit(X_train, y_train)

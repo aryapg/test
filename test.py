@@ -92,7 +92,13 @@ if y_train.isnull().values.any():
     print("y_train has missing values or NaNs.")
 else:
     print("y_train does not have missing values or NaNs.")
-    
+
+# Check for missing values or NaNs in y_train using numpy
+if np.isnan(y_train).any():
+    print("y_train has missing values or NaNs.")
+else:
+    print("y_train does not have missing values or NaNs.")
+
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
 rf_model.fit(X_train, y_train)

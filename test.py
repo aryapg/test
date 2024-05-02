@@ -5,7 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
-import pymysql
 from faker import Faker
 
 # Initialize Faker for generating fake data
@@ -16,7 +15,7 @@ num_rows = 10000
 
 # Generate synthetic data for each feature
 data = {
-        'Customer_Due_Diligence_CDD': np.random.choice([0, 1], size=num_rows),
+    'Customer_Due_Diligence_CDD': np.random.choice([0, 1], size=num_rows),
     'AML_Compliance': np.random.choice([0, 1], size=num_rows),
     'KYC': np.random.choice([0, 1], size=num_rows),
     'Privacy_Policy_Compliance': np.random.choice([0, 1], size=num_rows),
@@ -86,19 +85,30 @@ rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 
 rf_model.fit(X_train, y_train)
 
-y_pred = rf_model.predict(X_test)
-
-st.title('🛡️ Company Compliance Checker 🕵️')
-
 uploaded_file = st.file_uploader("Upload a file", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
         df = pd.read_excel(uploaded_file)
+        
+        # Check if uploaded file columns match training data columns
+        if not set(df.columns).issubset(set(X.columns)):
+            raise ValueError("Uploaded file columns do not match the expected features.")
+        
         sample_data = df.drop(['ComplianceStatus', 'company_name'], axis=1)
+        
+        # Encode categorical columns
         categorical_columns = ['TransactionType', 'IncidentSeverity']
         for column in categorical_columns:
-            sample_data[column] = label_encoder.fit_transform(sample_data[column])
+            if column in sample_data.columns:
+                sample_data[column] = label_encoder.fit_transform(sample_data[column])
+        
+        # Check if all expected categorical columns are present
+        missing_categorical = set(categorical_columns) - set(sample_data.columns)
+        if missing_categorical:
+            raise ValueError(f"Missing categorical columns: {', '.join(missing_categorical)}")
+        
+        # Make predictions on the uploaded data
         sample_pred_proba = rf_model.predict(sample_data)
         sample_pred = (sample_pred_proba > 0.5).astype(int)
         custom_label_mapping = {0: 'Not compliant', 1: 'Compliant'}
@@ -107,4 +117,5 @@ if uploaded_file is not None:
         st.write({"topFeatures": 'Feature 1, Feature 2, Feature 3'})
         st.write({"summaryText": 'Summary text based on the analysis.'})
     except Exception as e:
-        st.write({"error": str(e)})
+        st.write({"error": "Error processing uploaded file."})
+        st.write({"error_details": str(e)})

@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import shap
-from sklearn.model_selection import train_test_split  # Add this import statement
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 import pymysql
@@ -38,18 +38,6 @@ rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 rf_model.fit(X_train, y_train)
 
 y_pred = rf_model.predict(X_test)
-
-accuracy = accuracy_score(y_test, y_pred)
-st.write(f'Accuracy: {accuracy:.4f}')
-
-st.write(classification_report(y_test, y_pred))
-
-db = pymysql.connect(host='localhost',
-                     user='aryapg',
-                     password='Arya440022#@',
-                     db='compliance_status',
-                     charset='utf8mb4',
-                     cursorclass=pymysql.cursors.DictCursor)
 
 st.title('🛡️ Company Compliance Checker 🕵️')
 

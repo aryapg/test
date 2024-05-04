@@ -23,7 +23,7 @@ if uploaded_file is not None:
             files = {'file': ('dataset.xlsx', BytesIO(uploaded_file.read()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
 
             # Send request to Flask backend
-            response = requests.post('http://localhost:5000/', files=files)
+            response = requests.post('http://localhost:5000', files=files)
 
             # Handle response from backend
             if response.status_code == 200:

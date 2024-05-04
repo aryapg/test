@@ -1,40 +1,51 @@
 import streamlit as st
 import requests
-import pandas as pd
-from io import BytesIO
 
-# Title and description
-st.title("Company Compliance Checker")
-st.write("Hello! Upload a dataset to check company compliance.")
+# Function to check compliance
+def check_compliance(file):
+    url = 'http://localhost:5000/'  # Update this URL with your server URL
+    files = {'file': file}
+    try:
+        response = requests.post(url, files=files)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return None
+    except requests.ConnectionError as e:
+        st.error(f"Error connecting to the server: {e}")
+        return None
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        return None
 
-# File upload
-uploaded_file = st.file_uploader("Upload Dataset", type=['xlsx', 'xls'])
-if uploaded_file is not None:
-    st.write('File uploaded successfully!')
-    df = pd.read_excel(uploaded_file)
+# Streamlit app
+def main():
+    st.set_page_config(page_title="Company Compliance Checker")
 
-    # Display uploaded file data
-    st.write(df)
+    st.markdown("# 🛡️ Company Compliance Checker 🕵️")
+    st.markdown("Hello! Please upload a dataset to check company compliance.")
 
-    # Check compliance button
-    if st.button('Check Compliance'):
-        with st.spinner('Checking compliance...'):
-            # Prepare the file for upload
-            files = {'file': ('dataset.xlsx', BytesIO(uploaded_file.read()), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+    selected_file = st.file_uploader("Upload Dataset", type=['csv', 'xls', 'xlsx'])
 
-            # Send request to Flask backend
-            response = requests.post('http://localhost:5000/', files=files)
+    if selected_file:
+        st.markdown(f"Selected File: {selected_file.name}")
 
-            # Handle response from backend
-            if response.status_code == 200:
-                result = response.json()
-                st.success(result['complianceStatus'])
-                st.write('Top Features:')
-                st.write(result['topFeatures'])
-                st.write('Summary Text:')
-                st.write(result['summaryText'])
+        if st.button("Check Compliance"):
+            with st.spinner("Checking Compliance..."):
+                compliance_result = check_compliance(selected_file)
+
+            if compliance_result:
+                st.success("Compliance check completed successfully!")
+                if 'complianceStatus' in compliance_result:
+                    st.info(f"Compliance Status: {compliance_result['complianceStatus']}")
+                if 'summaryText' in compliance_result and 'topFeatures' in compliance_result:
+                    st.markdown("### Summary Text:")
+                    st.write(compliance_result['summaryText'])
+                    st.markdown("### Top Features:")
+                    for feature in compliance_result['topFeatures']:
+                        st.write(feature)
             else:
-                st.error('Error checking compliance. Please try again.')
+                st.error("An error occurred while checking compliance.")
 
-if __name__ == '__main__':
-    app.run(host='localhost', port=5000, debug=True)
+if __name__ == "__main__":
+    main()

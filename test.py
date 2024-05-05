@@ -1,51 +1,77 @@
 import streamlit as st
-import requests
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+import shap
 
-# Function to check compliance
-def check_compliance(file):
-    url = 'http://localhost:5000/'  # Update with your server URL (use IP address)
-    files = {'file': file}
-    try:
-        response = requests.post(url, files=files)
-        if response.status_code == 200:
-            return response.json()
+# Title and description
+st.title('🛡️ Company Compliance Checker 🕵️')
+st.write('Hello! Please upload a dataset to check company compliance.')
+
+# File upload
+uploaded_file = st.file_uploader('Upload Dataset', type=['xlsx', 'xls'])
+
+if uploaded_file:
+    st.write('Selected File:', uploaded_file.name)
+    df = pd.read_excel(uploaded_file)
+    
+    # Preprocess data
+    label_encoder = LabelEncoder()
+    categorical_columns = ['TransactionType', 'IncidentSeverity']
+    for column in categorical_columns:
+        df[column] = label_encoder.fit_transform(df[column])
+
+    # Load pre-trained model
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+
+    # Assuming X and y are pre-defined from your training data
+    X = df.drop('ComplianceStatus', axis=1)
+    y = df['ComplianceStatus']
+
+    # Adjust test_size to ensure train set has at least one sample
+    test_size = 0.2 if len(df) > 1 else 0.1
+
+    # Train the model
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    rf_model.fit(X_train, y_train)
+
+    # Make predictions
+    y_pred = rf_model.predict(X_test)
+
+    # Calculate accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+    st.write(f'Accuracy: {accuracy:.4f}')
+
+    # Display classification report
+    st.write('Classification Report:')
+    st.write(classification_report(y_test, y_pred))
+
+    # Explain model predictions
+    explainer = shap.Explainer(rf_model)
+    sample_pred_proba = rf_model.predict(X_test)
+    sample_pred = (sample_pred_proba > 0.5).astype(int)
+    shap_values = explainer.shap_values(X_test.iloc[0])
+    feature_importance = np.abs(shap_values).mean(axis=0)
+    feature_names = X_test.columns
+    feature_importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importance})
+    feature_importance_df_sorted = feature_importance_df.sort_values(by='Importance', ascending=False)
+    top_features = feature_importance_df_sorted['Feature'].head(3).tolist()
+
+    # Display top features and summary text
+    st.write('Top Features:')
+    for i, feature in enumerate(top_features):
+        st.write(f'{i+1}. {feature}')
+    
+    summary_text = "Based on our analysis, the major factors affecting compliance status are:\n"
+    for i, feature in enumerate(top_features):
+        if feature_importance_df_sorted.loc[feature_importance_df_sorted['Feature'] == feature, 'Importance'].values[0] > 0:
+            effect = "Improving"
         else:
-            return None
-    except requests.ConnectionError as e:
-        st.error(f"Error connecting to the server: {e}")
-        return None
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return None
+            effect = "decreasing"
+        summary_text += f"{i+1}. {feature}: {effect} this feature would contribute to compliance.\n"
 
-# Streamlit app
-def main():
-    st.set_page_config(page_title="Company Compliance Checker")
-
-    st.markdown("# 🛡️ Company Compliance Checker 🕵️")
-    st.markdown("Hello! Please upload a dataset to check company compliance.")
-
-    selected_file = st.file_uploader("Upload Dataset", type=['csv', 'xls', 'xlsx'])
-
-    if selected_file:
-        st.markdown(f"Selected File: {selected_file.name}")
-
-        if st.button("Check Compliance"):
-            with st.spinner("Checking Compliance..."):
-                compliance_result = check_compliance(selected_file)
-
-            if compliance_result:
-                st.success("Compliance check completed successfully!")
-                if 'complianceStatus' in compliance_result:
-                    st.info(f"Compliance Status: {compliance_result['complianceStatus']}")
-                if 'summaryText' in compliance_result and 'topFeatures' in compliance_result:
-                    st.markdown("### Summary Text:")
-                    st.write(compliance_result['summaryText'])
-                    st.markdown("### Top Features:")
-                    for feature in compliance_result['topFeatures']:
-                        st.write(feature)
-            else:
-                st.error("An error occurred while checking compliance.")
-
-if __name__ == "__main__":
-    main()
+    st.write('Summary Text:')
+    st.write(summary_text)

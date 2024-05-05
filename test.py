@@ -21,11 +21,13 @@ if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
     st.write(df.head())
 
-    sample_data = df.drop(['ComplianceStatus', 'company_name'], axis=1)
+    X = df.drop(['ComplianceStatus', 'company_name'], axis=1)
+    y = df['ComplianceStatus']
+    y = label_encoder.fit_transform(y)
 
     categorical_columns = ['TransactionType', 'IncidentSeverity']
     for column in categorical_columns:
-        sample_data[column] = label_encoder.fit_transform(sample_data[column])
+        X[column] = label_encoder.fit_transform(X[column])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -39,9 +41,9 @@ if uploaded_file is not None:
     st.write(classification_report(y_test, y_pred))
 
     explainer = shap.Explainer(rf_model)
-    shap_values = explainer.shap_values(sample_data.iloc[0])
+    shap_values = explainer.shap_values(X.iloc[0])
     feature_importance = np.abs(shap_values).mean(axis=0)
-    feature_names = sample_data.columns
+    feature_names = X.columns
     feature_importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importance})
     feature_importance_df_sorted = feature_importance_df.sort_values(by='Importance', ascending=False)
     top_features = feature_importance_df_sorted['Feature'].head(3).tolist()

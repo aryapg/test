@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import shap
 
@@ -31,28 +30,27 @@ if uploaded_file:
     X = df.drop('ComplianceStatus', axis=1)
     y = df['ComplianceStatus']
 
-    # Train the model
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    rf_model.fit(X_train, y_train)
+    # Train the model on the entire dataset
+    rf_model.fit(X, y)
 
-    # Make predictions
-    y_pred = rf_model.predict(X_test)
+    # Make predictions on the same dataset
+    y_pred = rf_model.predict(X)
 
     # Calculate accuracy
-    accuracy = accuracy_score(y_test, y_pred)
+    accuracy = accuracy_score(y, y_pred)
     st.write(f'Accuracy: {accuracy:.4f}')
 
     # Display classification report
     st.write('Classification Report:')
-    st.write(classification_report(y_test, y_pred))
+    st.write(classification_report(y, y_pred))
 
     # Explain model predictions
     explainer = shap.Explainer(rf_model)
-    sample_pred_proba = rf_model.predict(X_test)
-    sample_pred = (sample_pred_proba > 0.5).astype(int)
-    shap_values = explainer.shap_values(X_test.iloc[0])
+    sample_pred_proba = rf_model.predict_proba(X)
+    sample_pred = rf_model.predict(X)
+    shap_values = explainer.shap_values(X.iloc[0])
     feature_importance = np.abs(shap_values).mean(axis=0)
-    feature_names = X_test.columns
+    feature_names = X.columns
     feature_importance_df = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importance})
     feature_importance_df_sorted = feature_importance_df.sort_values(by='Importance', ascending=False)
     top_features = feature_importance_df_sorted['Feature'].head(3).tolist()

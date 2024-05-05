@@ -3,7 +3,7 @@ import requests
 
 # Function to check compliance
 def check_compliance(file):
-    url = 'http://192.168.0.1:5000/'  # Update with your server URL (use IP address)
+    url = 'http://localhost:5000/'  # Update with your server URL (use IP address)
     files = {'file': file}
     try:
         response = requests.post(url, files=files)

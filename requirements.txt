@@ -4,7 +4,7 @@ joblib
 numpy
 pandas
 pillow
-pymysql
+pymysql==1.1.0
 requests
 scikit-learn
 shap

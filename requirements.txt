@@ -9,6 +9,5 @@ requests
 scikit-learn
 shap
 streamlit
-Python>=3.7
-matplotlib
+matplotlib.pyplot
 openai

@@ -9,3 +9,6 @@ requests
 scikit-learn
 shap
 streamlit
+matplotlib
+json 
+openai
